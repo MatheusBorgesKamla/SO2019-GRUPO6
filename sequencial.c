@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <gmp.h>
+#include <time.h>
  
-//Funçao que aplica o método de gauss
+//Funçao que aplica o método de Gauss
 void gauss(int iteracao, mpf_t pi){
     //Valores inicias do método
     mpf_set_default_prec(pow(10,5));
@@ -19,7 +20,7 @@ void gauss(int iteracao, mpf_t pi){
     mpf_init(t_prox);
     mpf_init(p_prox);
     mpf_init(aux);
-         
+    //Para cada interação temos os seguintes passos     
     for(int i = 0; i < iteracao; i++){
         mpf_add(aux,b,a);
         mpf_div_ui(a_prox,aux,2);//a[n+1] = (a[n] + b[n])/2
@@ -48,6 +49,7 @@ void gauss(int iteracao, mpf_t pi){
     mpf_div(pi,aux,t);//(a+b)²/4*t
 }
 
+//Funçao que aplica o método de Borwein
 void bbp(int k, mpf_t pi){
     mpf_set_default_prec(pow(10,5));
     mpf_t aux, aux1, aux2, aux3, aux4, aux5, aux_k, soma, sub;
@@ -61,6 +63,7 @@ void bbp(int k, mpf_t pi){
     mpf_init(aux_k);
     mpf_init(soma);
     mpf_init(sub);
+    //Para cada interação temos um Somatório de 0 até N do termo : (1/16^k)((4/(8k + 1)) - 2/(8k + 5) - 1/(8k + 5) - 1/(8k + 6))
     for (int i = 0; i <= k; i++)
     {
         //aux = 8*i + 1;
@@ -110,18 +113,45 @@ void bbp(int k, mpf_t pi){
     mpf_set(pi,soma);
 }
 
+//Funçao que aplica o método de Monte Carlo
+void monte_carlo(int n, mpf_t pi){
+    unsigned int gseed = time(NULL); // Varíavel gseed sempre vai pegar um valor deferente para cada execução fazendo com que varie a sequência de nros aleatorios gerados
+    srand(gseed); // Função que vai inicializar a rand_r utilizando o gseed para determinar a sequência de aleatórios gerados
+    int teste, count = 0; 
+
+    mpf_set_default_prec(pow(10,5));
+    mpf_t x,y,z; //Variáveis x e y representam as coordenadas dos pontos gerados aleatoriamente
+    mpf_init(pi);
+    mpf_init(x);
+    mpf_init(y);
+    mpf_init(z);
+
+    for(int i=0; i<n; i++){
+        //Para cada interação gero um valor aletório para as coordenadas com a função rand_r (foi checado sua documentação e ela é thread-safe) e divido pelo valor
+        //máximo aleatório que posso gerar (RAND_MAX) para sempre gerar os números entre 0 e 1
+        mpf_set_d(x,(((double)rand_r(&gseed)) / ((double)RAND_MAX)));
+        mpf_set_d(y,(((double)rand_r(&gseed)) / ((double)RAND_MAX)));
+        mpf_pow_ui(x,x,2);//x²
+        mpf_pow_ui(y,y,2);//y²
+        mpf_add(z,x,y);//z = x² + y² - calculo sua distância a partir da origem para se está contido na circunferência de raio 1
+        teste = mpf_cmp_d(z,1.0); // Se z<1 - teste recebe um valor negativo, se z == 1 - teste recebe 0, se z>1 - teste recebe um valor positivo
+        if(teste <= 0)
+            count++; // Contabilizo meu contador se o ponto estiver contido
+    }
+    mpf_set_d(pi,(double)count / n * 4);
+}
 
 int main() {
-    int n = pow(10,2);
-    
-    mpf_t pi_gauss;
-    gauss(n,pi_gauss);
-    //int pre = mpf_get_prec(pi_gauss);
+        
+
+    mpf_t pi_gauss, pi_bbp, pi_mc;
+    //gauss(5,pi_gauss);
+    //bbp(5,pi_bbp);
+    monte_carlo(pow(10,9),pi_mc);
+ 
     gmp_printf("Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
-    
-    mpf_t pi_bbp;
-    bbp(n,pi_bbp);
-    gmp_printf("Aproximacao BBP: %.6Ff \n",pi_bbp);
+    gmp_printf("Aproximacao Borwein: %.6Ff \n",pi_bbp);
+    gmp_printf("Aproximacao Monte Carlo: %.6Ff \n",pi_mc);
 
 
     return 0;
