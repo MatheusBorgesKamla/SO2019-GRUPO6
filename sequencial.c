@@ -102,7 +102,8 @@ void bbp(int k, mpf_t pi){
         mpf_sub(sub,aux2,aux3);
         mpf_sub(sub,sub,aux4);
         mpf_sub(sub,sub,aux5);
-        mpf_set_ui(aux1,pow(16,i));
+        mpf_set_ui(aux1,16);
+        mpf_pow_ui(aux1,aux1,i);
         mpf_div(aux1,aux_k,aux1);
         mpf_mul(aux1,aux1,sub);
         
@@ -141,18 +142,34 @@ void monte_carlo(int n, mpf_t pi){
     mpf_set_d(pi,(double)count / n * 4);
 }
 
-int main() {
-        
+int main(int argc, char const *argv[]) {
+    if(argc != 3){
+        printf("Erro na passagem de parametros !");
+        return -1;
+    }
+    FILE *arq_entrada = fopen(argv[1],"r");
+    FILE *arq_saida = fopen(argv[2],"w");
+
+    if(arq_entrada == NULL || arq_saida == NULL){
+        printf("Erro ao abrir arquivos !");
+        return -1;
+    }
 
     mpf_t pi_gauss, pi_bbp, pi_mc;
-    //gauss(5,pi_gauss);
-    //bbp(5,pi_bbp);
+    gauss(pow(10,5),pi_gauss);
+    bbp(pow(10,5),pi_bbp);
     monte_carlo(pow(10,9),pi_mc);
  
     gmp_printf("Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
     gmp_printf("Aproximacao Borwein: %.6Ff \n",pi_bbp);
     gmp_printf("Aproximacao Monte Carlo: %.6Ff \n",pi_mc);
 
+    gmp_fprintf(arq_saida,"Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
+    gmp_fprintf(arq_saida,"Aproximacao Borwein: %.6Ff \n",pi_bbp);
+    gmp_fprintf(arq_saida,"Aproximacao Monte Carlo: %.6Ff \n",pi_mc);
+
+    fclose(arq_entrada);
+    fclose(arq_saida);
 
     return 0;
 }
