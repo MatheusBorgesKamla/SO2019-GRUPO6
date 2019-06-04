@@ -5,7 +5,7 @@
 #include <time.h>
  
 //Funçao que aplica o método de Gauss
-void gauss(int iteracao, mpf_t pi){
+void gauss(int n_iteracao, mpf_t pi){
     //Valores inicias do método
     mpf_set_default_prec(pow(10,5));
     mpf_t a, b, t, p;
@@ -21,7 +21,7 @@ void gauss(int iteracao, mpf_t pi){
     mpf_init(p_prox);
     mpf_init(aux);
     //Para cada interação temos os seguintes passos     
-    for(int i = 0; i < iteracao; i++){
+    for(int i = 0; i < n_iteracao; i++){
         mpf_add(aux,b,a);
         mpf_div_ui(a_prox,aux,2);//a[n+1] = (a[n] + b[n])/2
 
@@ -143,27 +143,29 @@ void monte_carlo(int n, mpf_t pi){
 }
 
 int main(int argc, char const *argv[]) {
-    if(argc != 3){
+    if(argc != 3){ //Testo se está passando o número correto de parâmetros
         printf("Erro na passagem de parametros !");
         return -1;
     }
-    FILE *arq_entrada = fopen(argv[1],"r");
-    FILE *arq_saida = fopen(argv[2],"w");
+    FILE *arq_entrada = fopen(argv[1],"r"); //Abro arquivo de entrada para leitura
+    FILE *arq_saida = fopen(argv[2],"w"); //Abro o arquivo de saída para escrita
 
-    if(arq_entrada == NULL || arq_saida == NULL){
+    if(arq_entrada == NULL || arq_saida == NULL){ //Testo se os arquivos existem/ foram abertos corretamento
         printf("Erro ao abrir arquivos !");
         return -1;
     }
 
-    mpf_t pi_gauss, pi_bbp, pi_mc;
+    mpf_t pi_gauss, pi_bbp, pi_mc; //Variáveis que guardarão a aproximação de pi de cada método
     gauss(pow(10,5),pi_gauss);
     bbp(pow(10,5),pi_bbp);
     monte_carlo(pow(10,9),pi_mc);
- 
+    
+    //Printando no terminal
     gmp_printf("Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
     gmp_printf("Aproximacao Borwein: %.6Ff \n",pi_bbp);
     gmp_printf("Aproximacao Monte Carlo: %.6Ff \n",pi_mc);
 
+    //Printando no arquivo de saída
     gmp_fprintf(arq_saida,"Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
     gmp_fprintf(arq_saida,"Aproximacao Borwein: %.6Ff \n",pi_bbp);
     gmp_fprintf(arq_saida,"Aproximacao Monte Carlo: %.6Ff \n",pi_mc);

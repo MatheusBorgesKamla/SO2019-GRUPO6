@@ -1,3 +1,0 @@
-Aproximacao Gauss-Legendre: 3.141593 
-Aproximacao Borwein: 3.141593 
-Aproximacao Monte Carlo: 3.141587 
