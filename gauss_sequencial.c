@@ -67,10 +67,10 @@ int main(int argc, char const *argv[]) {
     gauss(pow(10,5),pi_gauss);
     
     //Printando no terminal
-    gmp_printf("Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
+    //gmp_printf("Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
 
     //Printando no arquivo de saída
-    //gmp_fprintf(arq_saida,"Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
+    gmp_fprintf(arq_saida,"Aproximacao Gauss-Legendre: %.6Ff \n",pi_gauss);
 
     fclose(arq_entrada);
     fclose(arq_saida);

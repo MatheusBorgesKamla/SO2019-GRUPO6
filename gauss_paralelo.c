@@ -243,7 +243,7 @@ int main(int argc, char const *argv[])
         return -1;
     }
     FILE *arq_entrada = fopen(argv[1], "r");
-    FILE *arq_saida = fopen(argv[2], "w");
+    FILE *arq_saida = fopen(argv[2], "a+");
 
     if (arq_entrada == NULL || arq_saida == NULL)
     {
@@ -253,7 +253,7 @@ int main(int argc, char const *argv[])
 
     mpf_t pi_gauss;
     gauss(pi_gauss);
-    gmp_printf("Aproximacao Gauss-Legendre: %.6Ff \n", pi_gauss);
+    //gmp_printf("Aproximacao Gauss-Legendre: %.6Ff \n", pi_gauss);
     fclose(arq_entrada);
     fclose(arq_saida);
     return 0;
