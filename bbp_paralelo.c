@@ -1,63 +1,64 @@
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <gmp.h>
+#include <math.h>
 #include <pthread.h>
+#define N 100000
+int control_t1 = 0;
+int control_t2 = 0;
+int control_t3 = 0;
+int control_t4 = 0;
 
-#define N 100000     //Número de iterações a serem realizadas
-int control_a = 0, control_b = 0, control_c = 0, control_d = 0;
-
-//Mutex utilizada para garantir que o compartilhamento de memória vai ocorrer corretamente
 pthread_mutex_t mutex;
 
-//Primeiramente, vamos criar uma struct com as variáveis a serem utilizadas
-typedef struct BORWEIN
-{
-    mpf_t a;
-    mpf_t b;
-    mpf_t c;
-    mpf_t d;
-    mpf_t e;
-    mpf_t pi_aux;
-    mpf_t pi;
-} BORWEIN;
+typedef struct Arg_borwein{
 
-void *termoA(void *arg); //Calcula ( 4 / (8k + 1) )
-void *termoB(void *arg); //Calcula (2 / (8k + 4) )
-void *termoC(void *arg); //Calcula ( 1/(8k + 5) )
-void *termoD(void *arg); //Calcula ( 1/(8k + 6) )
-void *termoE(void *arg); //Calcula ( 1/16k ) * (A - B - C - D)
+    mpf_t aux, aux1, aux2, aux3, aux4, aux5, aux_k, soma, sub;
+
+} Arg_Borwein;
+
+void *termo_t1(void *arg);
+void *termo_t2(void *arg);
+void *termo_t3(void *arg);
+void *termo_t4(void *arg);
+void *termo_t5(void *arg);
 
 int main(int argc, char const *argv[])
 {
+
     if (argc != 3)
     {
         printf("Erro na passagem de parametros !");
         return -1;
     }
+    FILE *arq_entrada = fopen(argv[1], "r");
+    FILE *arq_saida = fopen(argv[2], "w");
 
-    FILE *arquivo;
-    arquivo = fopen(argv[1], "r");
+    if (arq_entrada == NULL || arq_saida == NULL)
+    {
+        printf("Erro ao abrir arquivos !");
+        return -1;
+    }
 
-    BORWEIN argumento;
-
-    mpf_init(argumento.a);
-    mpf_init(argumento.b);
-    mpf_init(argumento.c);
-    mpf_init(argumento.d);
-    mpf_init(argumento.e);
-    mpf_init(argumento.pi_aux);
-    mpf_init(argumento.pi);
+    Arg_Borwein aux;
+    mpf_init(aux.aux);
+    mpf_init(aux.aux1);
+    mpf_init(aux.aux2);
+    mpf_init(aux.aux3);
+    mpf_init(aux.aux4);
+    mpf_init(aux.aux5);
+    mpf_init(aux.aux_k);
+    mpf_init(aux.soma);
+    mpf_init(aux.sub);
 
     pthread_mutex_init(&mutex, NULL);
-
     pthread_t t[5];
 
-    pthread_create(&t[0], NULL, termoA, &argumento);
-    pthread_create(&t[1], NULL, termoB, &argumento);
-    pthread_create(&t[2], NULL, termoC, &argumento);
-    pthread_create(&t[3], NULL, termoD, &argumento);
-    pthread_create(&t[4], NULL, termoE, &argumento);
+    pthread_create(&t[0], NULL, termo_t1, &aux);
+    pthread_create(&t[1], NULL, termo_t2, &aux);
+    pthread_create(&t[2], NULL, termo_t3, &aux);
+    pthread_create(&t[3], NULL, termo_t4, &aux);
+    pthread_create(&t[4], NULL, termo_t5, &aux);
 
     pthread_join(t[0], NULL);
     pthread_join(t[1], NULL);
@@ -65,142 +66,150 @@ int main(int argc, char const *argv[])
     pthread_join(t[3], NULL);
     pthread_join(t[4], NULL);
 
-    gmp_printf("\n\nPi: %.6Ff\n\n", argumento.pi);
 
-    FILE *arqSaida;
-    arqSaida = fopen(argv[2], "w");
 
-    fclose(arquivo);
-    fclose(arqSaida);
+    gmp_printf("Aproximacao Borwein: %.6Ff \n", aux.soma);
+
+    fclose(arq_entrada);
+    fclose(arq_saida);
+
     return 0;
 }
 
-void *termoA(void *arg)
+void *termo_t1(void *arg)
 {
-    BORWEIN *borwein = (BORWEIN *)arg;
-
+    Arg_Borwein *aux = (Arg_Borwein *)arg;
     int i = 0;
     while (i < N)
     {
-        if (control_a == 0)
+        if (control_t1 == 0)
         {
             pthread_mutex_lock(&mutex);
-            mpf_set_ui(borwein->a, i);
-            mpf_mul_ui(borwein->a, borwein->a, 8);
-            mpf_add_ui(borwein->a, borwein->a, 1);
-            mpf_ui_div(borwein->a, 4, borwein->a);
 
-            control_a = 1;
+            //aux = 8*i + 1;
+            mpf_set_ui(aux->aux, 8 * i);
+            mpf_add_ui(aux->aux, aux->aux, 1);
+
+            //aux2 = 4/aux;
+            mpf_set_ui(aux->aux_k, 4);
+            mpf_div(aux->aux2, aux->aux_k, aux->aux);
+
+            control_t1 = 1;
             i++;
+
             pthread_mutex_unlock(&mutex);
+
         }
     }
-    return (void *)borwein->a;
+    return (void *)aux->aux2;
 }
 
-void *termoB(void *arg)
+void *termo_t2(void *arg)
 {
-    BORWEIN *borwein = (BORWEIN *)arg;
-
-    int i = 0;
-    
-    while (i < N)
-    {
-        if (control_b == 0)
-        {
-            pthread_mutex_lock(&mutex);
-            mpf_set_ui(borwein->b, i);
-            mpf_mul_ui(borwein->b, borwein->b, 8);
-            mpf_add_ui(borwein->b, borwein->b, 4);
-            mpf_ui_div(borwein->b, 2, borwein->b);
-
-            control_b = 1;
-            i++;
-            pthread_mutex_unlock(&mutex);
-        }
-    }
-    return (void *)borwein->b;
-}
-
-void *termoC(void *arg)
-{
-    BORWEIN *borwein = (BORWEIN *)arg;
-
+    Arg_Borwein *aux = (Arg_Borwein *)arg;
     int i = 0;
     while (i < N)
     {
-        if (control_c == 0)
+        if (control_t2 == 0)
         {
             pthread_mutex_lock(&mutex);
-            mpf_set_ui(borwein->c, i);
-            mpf_mul_ui(borwein->c, borwein->c, 8);
-            mpf_add_ui(borwein->c, borwein->c, 5);
-            mpf_ui_div(borwein->c, 1, borwein->c);
+            //aux = 8*i + 4;
+            mpf_set_ui(aux->aux, 8 * i);
+            mpf_add_ui(aux->aux, aux->aux, 4);
 
-            control_c = 1;
+            //aux3 = 2/aux;
+            mpf_set_ui(aux->aux_k, 2);
+            mpf_div(aux->aux3, aux->aux_k, aux->aux);
+
+            control_t2 = 1;
             i++;
             pthread_mutex_unlock(&mutex);
         }
     }
-    return (void *)borwein->c;
+    return (void *)aux->aux3;
 }
 
-void *termoD(void *arg)
+void *termo_t3(void *arg)
 {
-    BORWEIN *borwein = (BORWEIN *)arg;
-
+    Arg_Borwein *aux = (Arg_Borwein *)arg;
     int i = 0;
     while (i < N)
     {
-        if (control_d == 0)
+        if (control_t3 == 0)
         {
             pthread_mutex_lock(&mutex);
-            mpf_set_ui(borwein->d, i);
-            mpf_mul_ui(borwein->d, borwein->d, 8);
-            mpf_add_ui(borwein->d, borwein->d, 6);
-            mpf_ui_div(borwein->d, 1, borwein->d);
+            //aux = 8*i + 5;
+            mpf_set_ui(aux->aux, 8 * i);
+            mpf_add_ui(aux->aux, aux->aux, 5);
 
-            control_d = 1;
+            //aux4 = 1/aux;
+            mpf_set_ui(aux->aux_k, 1);
+            mpf_div(aux->aux4, aux->aux_k, aux->aux);
+
+            control_t3 = 1;
             i++;
             pthread_mutex_unlock(&mutex);
         }
     }
-    return (void *)borwein->d;
+    return (void *)aux->aux4;
 }
 
-void *termoE(void *arg)
+void *termo_t4(void *arg)
 {
-    BORWEIN *borwein = (BORWEIN *)arg;
-
-    int i = 0,count = 0;
+    Arg_Borwein *aux = (Arg_Borwein *)arg;
+    int i = 0;
     while (i < N)
     {
-        if (control_a == 1 && control_b == 1 && control_c == 1 && control_d == 1)
+        if (control_t4 == 0)
         {
             pthread_mutex_lock(&mutex);
-            mpf_set_ui(borwein->e, 16);
-            mpf_pow_ui(borwein->e, borwein->e, i);
-            mpf_ui_div(borwein->e, 1, borwein->e);
+            //aux = 8*i + 6;
+            mpf_set_ui(aux->aux, 8 * i);
+            mpf_add_ui(aux->aux, aux->aux, 6);
 
-            mpf_sub(borwein->a, borwein->a, borwein->b);
-            mpf_sub(borwein->a, borwein->a, borwein->c);
-            mpf_sub(borwein->a, borwein->a, borwein->d);
+            //aux5 = 1/aux;
+            mpf_set_ui(aux->aux_k, 1);
+            mpf_div(aux->aux5, aux->aux_k, aux->aux);
 
-            mpf_mul(borwein->a, borwein->a, borwein->e);
-            mpf_set(borwein->pi_aux, borwein->a);
-            mpf_add(borwein->pi, borwein->pi, borwein->pi_aux);
-
-            control_a = 0;
-            control_b = 0;
-            control_c = 0;
-            control_d = 0;
-
-            count++;
+            control_t4 = 1;
             i++;
             pthread_mutex_unlock(&mutex);
         }
     }
-    printf("COUNT: %d", count);
-    
-    return (void *)borwein->pi_aux;
+    return (void *)aux->aux5;
+}
+
+void *termo_t5(void *arg)
+{
+    Arg_Borwein *aux = (Arg_Borwein *)arg;
+    int i = 0;
+    while (i < N)
+    {
+        if (control_t1 == 1 && control_t2 == 1 && control_t3 == 1 && control_t4 == 1)
+        {
+            pthread_mutex_lock(&mutex);
+            //aux1 = (1/pow(16,i))*(aux2 - aux3 - aux4 - aux5);
+            mpf_sub(aux->sub, aux->aux2, aux->aux3);
+            mpf_sub(aux->sub, aux->sub, aux->aux4);
+            mpf_sub(aux->sub, aux->sub, aux->aux5);
+            mpf_set_ui(aux->aux1, 16);
+            mpf_pow_ui(aux->aux1, aux->aux1, i);
+            mpf_set_ui(aux->aux_k,1);
+            mpf_div(aux->aux1, aux->aux_k, aux->aux1);
+            mpf_mul(aux->aux1, aux->aux1, aux->sub);
+
+            //soma += aux1;
+            mpf_add(aux->soma, aux->soma, aux->aux1);
+
+
+            i++;
+
+            control_t1 = 0;
+            control_t2 = 0;
+            control_t3 = 0;
+            control_t4 = 0;
+            pthread_mutex_unlock(&mutex);
+        }
+    }
+    return (void *)aux->soma;
 }
